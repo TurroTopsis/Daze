@@ -8,6 +8,7 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 
+import android.os.Handler;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -52,7 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class MapsActivityCurrentPlace extends AppCompatActivity
-        implements OnMapReadyCallback, GoogleMap.OnMapLongClickListener, GoogleMap.OnInfoWindowClickListener {
+        implements OnMapReadyCallback, GoogleMap.OnMapLongClickListener, GoogleMap.OnInfoWindowClickListener, GoogleMap.OnMarkerClickListener {
 
     private static final String TAG = "myTag";
     private static final String MAPS_API_KEY = "AIzaSyBUHupnB0Ks_eMK25yScFgmA9mQEWlXINU";
@@ -64,7 +65,7 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
 
     // A default location (Bronxville, New York) and default zoom to use when location permission is not granted
     private final LatLng defaultLocation = new LatLng(40.93780651407292, -73.83080002136819);
-    private static final int DEFAULT_ZOOM = 15;
+    private static final int DEFAULT_ZOOM = 50;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private boolean locationPermissionGranted;
 
@@ -100,6 +101,8 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
         put("Trash Can", new Object[]{BitmapDescriptorFactory.HUE_VIOLET,
                 "https://us.glasdon.com/images/products/400/Fido-25-pet-waste-station-01-Ginc.jpg"});
     }};
+    // https://stackoverflow.com/questions/39543304/how-to-open-a-new-activity-by-using-double-click-marker-for-android-google-map-a/39543436
+    private boolean doubleBackToExitPressedOnce = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -440,6 +443,7 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
      */
     private void myAddMarker(LatLng point, String title, String snippet, float color) {
         map.setOnInfoWindowClickListener(this);
+        map.setOnMarkerClickListener(this);
         map.addMarker(new MarkerOptions()
                 .position(point)
                 .title(title)
@@ -452,6 +456,7 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
      * When the user clicks the info window of a marker, open the url associated with its concern
      * @param marker    the Marker object that was clicked
      */
+    @Override
     public void onInfoWindowClick(Marker marker) {
         if (CONCERNS_DICT.containsKey(marker.getTitle())) {
             String url = (String) CONCERNS_DICT.get(marker.getTitle())[1];
@@ -461,5 +466,27 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
         } else {
             Log.i(TAG, "The info window of a marker not for a concern was clicked, so nothing happened");
         }
+    }
+
+    /**
+     * When the user double-clicks a marker, delete it
+     * @param marker    the Marker object that was clicked
+     * @return          boolean
+     */
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        if (doubleBackToExitPressedOnce) {
+            marker.remove();
+            Log.i(TAG, "The user clicked a marker to delete it");
+        } else {
+            doubleBackToExitPressedOnce = true;
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    doubleBackToExitPressedOnce = false;
+                }
+            }, 25000);
+        }
+        return false;
     }
 }
